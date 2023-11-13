@@ -1,22 +1,34 @@
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
-
 #include "geometrycentral/surface/direction_fields.h"
-
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-
+#include "geometrycentral/surface/surface_mesh_factories.h"
 #include "args/args.hxx"
 #include "imgui.h"
+#include <CGAL/Simple_cartesian.h>
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/draw_surface_mesh.h>
+#include <mesh_transform.h>
+#include <mesh_repair.h>
 
+#include <iostream>
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef K::FT FT;
+typedef K::Point_3 Point;
+typedef CGAL::Surface_mesh<Point> Mesh;
 using namespace geometrycentral;
 using namespace geometrycentral::surface;
-
+namespace gc = geometrycentral;
+namespace gcs = geometrycentral::surface;
+typedef boost::graph_traits<Mesh>::face_descriptor face_descriptor;
+typedef boost::graph_traits<Mesh>::vertex_descriptor  vertex_descriptor;
 // == Geometry-central data
 std::unique_ptr<ManifoldSurfaceMesh> mesh;
 std::unique_ptr<VertexPositionGeometry> geometry;
-
+std::shared_ptr<CGAL::Surface_mesh<Point>> cgalMesh;
 // Polyscope visualization handle, to quickly add data to the surface
 polyscope::SurfaceMesh *psMesh;
 
@@ -35,6 +47,23 @@ void doWork() {
                                   polyscope::DataType::SYMMETRIC);
 }
 
+double calculateEdgeLength(const Mesh& mesh, edge_descriptor e) {
+    auto point1 = target(halfedge(e, mesh), mesh);
+    auto point2 = target(opposite(halfedge(e, mesh), mesh), mesh);
+    return CGAL::sqrt(CGAL::squared_distance(mesh.point(point1), mesh.point(point2)));
+}
+double averageEdgeLength(const Mesh& mesh) {
+    double totalLength = 0.0;
+    int edgeCount = 0;
+
+    for (const auto& edge : edges(mesh)) {
+        totalLength += calculateEdgeLength(mesh, edge);
+        ++edgeCount;
+    }
+
+    return (edgeCount > 0) ? (totalLength / edgeCount) : 0.0;
+}
+
 // A user-defined callback, for creating control panels (etc)
 // Use ImGUI commands to build whatever you want here, see
 // https://github.com/ocornut/imgui/blob/master/imgui.h
@@ -50,7 +79,7 @@ void myCallback() {
 int main(int argc, char **argv) {
 
   // Configure the argument parser
-  args::ArgumentParser parser("geometry-central & Polyscope example project");
+  args::ArgumentParser parser("CGAL-Polyscope Project");
   args::Positional<std::string> inputFilename(parser, "mesh", "A mesh file.");
 
   // Parse args
@@ -79,27 +108,35 @@ int main(int argc, char **argv) {
 
   // Load mesh
   std::tie(mesh, geometry) = readManifoldSurfaceMesh(args::get(inputFilename));
+  polyscope::registerSurfaceMesh("Original Mesh", geometry->vertexPositions, 
+                              mesh->getFaceVertexList());
 
-  // Register the mesh with polyscope
-  psMesh = polyscope::registerSurfaceMesh(
-      polyscope::guessNiceNameFromPath(args::get(inputFilename)),
-      geometry->inputVertexPositions, mesh->getFaceVertexList(),
-      polyscopePermutations(*mesh));
 
-  // Set vertex tangent spaces
-  geometry->requireVertexTangentBasis();
-  VertexData<Vector3> vBasisX(*mesh);
-  for (Vertex v : mesh->vertices()) {
-    vBasisX[v] = geometry->vertexTangentBasis[v][0];
-  }
-  psMesh->setVertexTangentBasisX(vBasisX);
 
-  auto vField =
-      geometrycentral::surface::computeSmoothestVertexDirectionField(*geometry);
-  psMesh->addVertexIntrinsicVectorQuantity("VF", vField);
+ //transform from cgal to geometry central and in reverse direction
+  MeshTransform meshTransform;
+  cgalMesh = std::make_shared<CGAL::Surface_mesh<K::Point_3>>(meshTransform.toCGAL(mesh, geometry));
+  MeshRepair meshrepair(cgalMesh);
+  double AverageEdgeLength = averageEdgeLength(*cgalMesh);
+  std::cout<< "average mesh length= "<< AverageEdgeLength <<std::endl;
+  CGAL::draw(*cgalMesh);
+  meshrepair.isotropicRemeshing(AverageEdgeLength/2.0,1);
+  meshrepair.nonManifoldCorrection();
+  CGAL::draw(*cgalMesh);
+
+
+
+  auto result = meshTransform.toGC(cgalMesh);
+  std::unique_ptr<gcs::SurfaceMesh>& surfaceMesh = std::get<0>(result);
+  std::unique_ptr<gcs::VertexPositionGeometry>& vertexGeometry = std::get<1>(result);
+  vertexGeometry->requireVertexPositions();
+  polyscope::registerSurfaceMesh("Refined Mesh", vertexGeometry->vertexPositions, 
+                              surfaceMesh->getFaceVertexList());
+
 
   // Give control to the polyscope gui
   polyscope::show();
+
 
   return EXIT_SUCCESS;
 }

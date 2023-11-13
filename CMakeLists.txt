@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.10.0)
 
-project(gc_polyscope_example)
+project(cgalpoly)
+
+
+# Require c++14 and standard libraries
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 ### Configure output locations
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -62,18 +68,25 @@ endif()
 # == Deps
 add_subdirectory(deps/geometry-central)
 add_subdirectory(deps/polyscope)
+find_package(CGAL REQUIRED OPTIONAL_COMPONENTS Qt5)
+find_package(Eigen3 REQUIRED)
+include(CGAL_Eigen3_support)
+add_definitions(-DCGAL_USE_BASIC_VIEWER)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # == Build our project stuff
 
 set(SRCS 
+  src/mesh_transform.cpp
+  src/mesh_repair.cpp
   src/main.cpp
 	# add any other source files here
 )
 
 
 # To change the name of your executable, change "gc_project" in the lines below to whatever you want
-add_executable(gc_project "${SRCS}")
-target_include_directories(gc_project PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+add_executable(cgalpoly "${SRCS}")
+target_include_directories(cgalpoly PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
 # add the args.hxx project which we use for command line args
-target_include_directories(gc_project PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/deps/polyscope/deps/args")
-target_link_libraries(gc_project geometry-central polyscope)
+target_include_directories(cgalpoly PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/deps/polyscope/deps/args")
+target_link_libraries(cgalpoly CGAL::CGAL CGAL::Eigen3_support CGAL::CGAL_Qt5 geometry-central polyscope)
