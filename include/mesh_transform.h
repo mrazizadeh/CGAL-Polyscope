@@ -21,9 +21,9 @@ namespace gcs = geometrycentral::surface;
 class MeshTransform {
 public:
     MeshTransform() = default;
-    Mesh toCGAL(const std::unique_ptr<gcs::ManifoldSurfaceMesh>& mesh,
-                const std::unique_ptr<gcs::VertexPositionGeometry>& geometry) const;
+    Mesh toCGAL(const std::shared_ptr<gcs::ManifoldSurfaceMesh>& mesh,
+                const std::shared_ptr<gcs::VertexPositionGeometry>& geometry) const;
 
-    std::tuple<std::unique_ptr<gcs::SurfaceMesh>, std::unique_ptr<gcs::VertexPositionGeometry>> toGC(
+    std::tuple<std::shared_ptr<gcs::ManifoldSurfaceMesh>, std::shared_ptr<gcs::VertexPositionGeometry>> toGC(
         const std::shared_ptr<Mesh>& cgalMesh) const;
 };

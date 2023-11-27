@@ -14,10 +14,9 @@ struct halfedge2edge
     std::vector<edge_descriptor>& m_edges;
 };
 
-MeshRepair::MeshRepair(const std::shared_ptr<Mesh>& inputMesh) : mesh(inputMesh) {}
 
-const std::shared_ptr<Mesh>& MeshRepair::isotropicRemeshing(double target_edge_length, unsigned int nb_iter) {
-    splitBorderEdges(target_edge_length);
+const std::shared_ptr<Mesh>& MeshRepair::isotropicRemeshing(const std::shared_ptr<Mesh>& mesh, double target_edge_length, unsigned int nb_iter) {
+    splitBorderEdges(mesh, target_edge_length);
     std::cout << "Start remeshing" << std::endl;
     PMP::isotropic_remeshing(faces(*mesh), target_edge_length, *mesh,
                              CGAL::parameters::number_of_iterations(nb_iter)
@@ -26,7 +25,7 @@ const std::shared_ptr<Mesh>& MeshRepair::isotropicRemeshing(double target_edge_l
 }
 
 
-void MeshRepair::nonManifoldCorrection() {
+void MeshRepair::nonManifoldCorrection(const std::shared_ptr<Mesh>& mesh) {
     int counter = 0;
     for (vertex_descriptor v : vertices(*mesh)) {
         if (PMP::is_non_manifold_vertex(v, *mesh)) {
@@ -48,7 +47,7 @@ void MeshRepair::nonManifoldCorrection() {
     PMP::remove_isolated_vertices(*mesh);
 }
 
-void MeshRepair::shapeSmoothing(unsigned int nb_iterations, double time) {
+void MeshRepair::shapeSmoothing(const std::shared_ptr<Mesh>& mesh, unsigned int nb_iterations, double time) {
     std::set<Mesh::Vertex_index> constrained_vertices;
     for (Mesh::Vertex_index v : vertices(*mesh)) {
         if (is_border(v, *mesh))
@@ -61,22 +60,13 @@ void MeshRepair::shapeSmoothing(unsigned int nb_iterations, double time) {
 
 }
 
-const std::shared_ptr<Mesh>& MeshRepair::getMesh() const {
-    return mesh;
-}
-
-void MeshRepair::writeMesh(const std::string& filename) const {
-    CGAL::IO::write_polygon_mesh(filename, *mesh, CGAL::parameters::stream_precision(17));
-    std::cout << "Remeshing done." << std::endl;
-}
-
-void MeshRepair::splitBorderEdges(double target_edge_length) {
+void MeshRepair::splitBorderEdges(const std::shared_ptr<Mesh>& mesh, double target_edge_length) {
     std::vector<edge_descriptor> border;
     PMP::border_halfedges(faces(*mesh), *mesh, boost::make_function_output_iterator(halfedge2edge(*mesh, border)));
     PMP::split_long_edges(border, target_edge_length, *mesh);
 }
 
-void MeshRepair::fixNonManifoldVertices() {
+void MeshRepair::fixNonManifoldVertices(const std::shared_ptr<Mesh>& mesh) {
     for (vertex_descriptor v : vertices(*mesh)) {
         if (PMP::is_non_manifold_vertex(v, *mesh)) {
             std::cout << "vertex " << v << " is non-manifold" << std::endl;
@@ -84,7 +74,7 @@ void MeshRepair::fixNonManifoldVertices() {
     }
 }
 
-void MeshRepair::mergeVertices(vertex_descriptor v_keep, vertex_descriptor v_rm) {
+void MeshRepair::mergeVertices(const std::shared_ptr<Mesh>& mesh, vertex_descriptor v_keep, vertex_descriptor v_rm) {
     std::cout << "merging vertices " << v_keep << " and " << v_rm << std::endl;
     for (halfedge_descriptor h : CGAL::halfedges_around_target(v_rm, *mesh))
         set_target(h, v_keep, *mesh);

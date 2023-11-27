@@ -5,9 +5,9 @@
 namespace polyscope {
 namespace options {
 
-std::string programName = "Polyscope";
+std::string programName = "CGAL-Polyscope";
 int verbosity = 2;
-std::string printPrefix = "[polyscope] ";
+std::string printPrefix = "[CGAL-Polyscope] ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
@@ -26,7 +26,7 @@ std::string screenshotExtension = ".png";
 // == Scene options
 
 // Ground plane / shadows
-bool groundPlaneEnabled = true;
+bool groundPlaneEnabled = false;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
 ScaledValue<float> groundPlaneHeightFactor = 0;
 int shadowBlurIters = 2;

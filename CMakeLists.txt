@@ -77,8 +77,11 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # == Build our project stuff
 
 set(SRCS 
+  src/object_writer.cpp
   src/mesh_transform.cpp
   src/mesh_repair.cpp
+  src/mesh_utilities.cpp
+  src/mesh_morpho_refine.cpp
   src/main.cpp
 	# add any other source files here
 )

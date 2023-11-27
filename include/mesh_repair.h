@@ -24,24 +24,20 @@ namespace NP = CGAL::parameters;
 
 class MeshRepair {
 public:
-    MeshRepair(const std::shared_ptr<Mesh>& inputMesh);  // Change inputMesh to shared pointer
+    MeshRepair() = default;  // Change inputMesh to shared pointer
 
-    const std::shared_ptr<Mesh>& isotropicRemeshing(double target_edge_length, unsigned int nb_iter);
+    const std::shared_ptr<Mesh>& isotropicRemeshing(const std::shared_ptr<Mesh>& mesh, double target_edge_length, unsigned int nb_iter);
 
-    void nonManifoldCorrection();
+    void nonManifoldCorrection(const std::shared_ptr<Mesh>& mesh);
 
-    void shapeSmoothing(unsigned int nb_iterations, double time);
+    void shapeSmoothing(const std::shared_ptr<Mesh>& mesh, unsigned int nb_iterations, double time);
 
-    const std::shared_ptr<Mesh>& getMesh() const;
-
-    void writeMesh(const std::string& filename) const;
 
 private:
-    std::shared_ptr<Mesh> mesh;  // Use shared pointer
 
-    void splitBorderEdges(double target_edge_length);
+    void splitBorderEdges(const std::shared_ptr<Mesh>& mesh, double target_edge_length);
 
-    void fixNonManifoldVertices();
+    void fixNonManifoldVertices(const std::shared_ptr<Mesh>& mesh);
 
-    void mergeVertices(vertex_descriptor v_keep, vertex_descriptor v_rm);
+    void mergeVertices(const std::shared_ptr<Mesh>& mesh, vertex_descriptor v_keep, vertex_descriptor v_rm);
 };

@@ -1,8 +1,8 @@
 #include <mesh_transform.h>
 
 //From geometry-central MESH and VPG to CGAL
-Mesh MeshTransform::toCGAL(const std::unique_ptr<gcs::ManifoldSurfaceMesh>& mesh,
-                          const std::unique_ptr<gcs::VertexPositionGeometry>& geometry) const {
+Mesh MeshTransform::toCGAL(const std::shared_ptr<gcs::ManifoldSurfaceMesh>& mesh,
+                          const std::shared_ptr<gcs::VertexPositionGeometry>& geometry) const {
     Mesh cgalMesh;
     std::map<gcs::Vertex, Mesh::Vertex_index> vertexMap;
     for (gcs::Vertex v : mesh->vertices()) {
@@ -22,7 +22,7 @@ Mesh MeshTransform::toCGAL(const std::unique_ptr<gcs::ManifoldSurfaceMesh>& mesh
 }
 
 // From CGAL to GEOMETRY CENTRAL MESH AND VPG
-std::tuple<std::unique_ptr<gcs::SurfaceMesh>, std::unique_ptr<gcs::VertexPositionGeometry>>
+std::tuple<std::shared_ptr<gcs::ManifoldSurfaceMesh>, std::shared_ptr<gcs::VertexPositionGeometry>>
 MeshTransform::toGC(const std::shared_ptr<Mesh>& cgalMesh) const {
     std::vector<std::vector<size_t>> cgalFaces;
     std::map<Mesh::Vertex_index, size_t> vertexIndexMap;  // Map from CGAL vertex index to new index
@@ -49,9 +49,9 @@ MeshTransform::toGC(const std::shared_ptr<Mesh>& cgalMesh) const {
         cgalFaces.push_back(faceIndices);
     }
 
-    std::unique_ptr<gcs::SurfaceMesh> surfaceMesh;
-    std::unique_ptr<gcs::VertexPositionGeometry> vertexGeometry;
-    std::tie(surfaceMesh, vertexGeometry) = makeSurfaceMeshAndGeometry(cgalFaces, cgalVertices);
+    std::shared_ptr<gcs::ManifoldSurfaceMesh> surfaceMesh;
+    std::shared_ptr<gcs::VertexPositionGeometry> vertexGeometry;
+    std::tie(surfaceMesh, vertexGeometry) = makeManifoldSurfaceMeshAndGeometry(cgalFaces, cgalVertices);
     return std::make_tuple(std::move(surfaceMesh), std::move(vertexGeometry));
 }
 
